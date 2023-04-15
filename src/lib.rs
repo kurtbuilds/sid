@@ -4,6 +4,11 @@ static ALPHABET: &str = "0abcdefghjkmnpqrstuvwxyz23456789";
 
 const SHORT_LENGTH: usize = 22;
 
+#[derive(Clone)]
+pub struct Test<T> {
+    _marker: T,
+}
+
 fn base32_encode(data: &[u8], alphabet: &str) -> String {
     let mut result = String::new();
     let mut buffer = 0u64;
@@ -46,9 +51,31 @@ fn unix_epoch_ms() -> u64 {
     }
 }
 
-pub struct Oid<T> {
+pub struct NoLabel;
+
+#[derive(PartialOrd, PartialEq, Eq, Ord, Hash, Copy)]
+pub struct Oid<T = NoLabel> {
     data: [u8; 16],
     marker: std::marker::PhantomData<T>,
+}
+
+impl<T> Clone for Oid<T> {
+    fn clone(&self) -> Self {
+        Self {
+            data: self.data,
+            marker: Default::default(),
+        }
+    }
+}
+
+impl Label for NoLabel {
+    fn label() -> &'static str {
+        ""
+    }
+}
+
+pub fn new_oid() -> Oid {
+    NoLabel::oid()
 }
 
 impl<T: Label> Oid<T> {
@@ -78,6 +105,11 @@ impl<T: Label> Oid<T> {
     pub fn short(&self) -> String {
         let encoded = base32_encode(&self.data, ALPHABET);
         format!("{}{}", T::label(), &encoded[SHORT_LENGTH..])
+    }
+
+    #[cfg(feature = "uuid")]
+    pub fn uuid(&self) -> uuid::Uuid {
+        uuid::Uuid::from_bytes(self.data)
     }
 }
 
@@ -161,8 +193,8 @@ mod tests {
         let oid = Team::new(bytes);
         println!("{}", oid.short());
         println!("{}", oid);
-        assert_eq!(oid.to_string(), "team_yrbygbyfyadoonekbcgy4do_bhey");
-        assert_eq!(oid.short(), "team_bhey");
+        assert_eq!(oid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
+        assert_eq!(oid.short(), "team_srb0");
     }
 
     #[test]
@@ -170,8 +202,10 @@ mod tests {
         let oid = Team::null();
         println!("{}", oid.short());
         println!("{}", oid);
-        assert_eq!(oid.to_string(), "team_yrbygbyfyadoonekbcgy4do_bhey");
-        assert_eq!(oid.short(), "team_bhey");
+        assert_eq!(oid.to_string(), "team_0000000000000000000000_0000");
+        assert_eq!(oid.short(), "team_0000");
+        let oid = NoLabel::null();
+        assert_eq!(oid.to_string(), "0000000000000000000000_0000");
     }
 
     #[test]
@@ -179,7 +213,9 @@ mod tests {
     fn test_uuid() {
         let bytes = [1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
         let oid = Team::new(bytes);
-        let uuid: uuid::Uuid = oid.into();
+        let uuid: uuid::Uuid = oid.clone().into();
         assert_eq!(uuid.to_string(), "01020304-0506-0708-090a-0b0c0d0e0f10");
+        let uuid2 = oid.uuid();
+        assert_eq!(uuid, uuid2);
     }
 }

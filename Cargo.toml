@@ -5,9 +5,15 @@ members = [
 ]
 
 [package]
-name = "oid"
+name = "oid2"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "An id schema that is compatible with uuid, lexicographcally sorted (won't explode database indexes), readable, and double-click-copyable."
+
+[lib]
+name = "oid"
+path = "src/lib.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [features]
