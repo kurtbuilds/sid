@@ -126,7 +126,7 @@ impl<T: Label> From<uuid::Uuid> for Oid<T> {
         let bytes = value.as_ref();
         let mut data: [u8; 16] = [0; 16];
         data.copy_from_slice(bytes);
-        T::new(data)
+        T::from_bytes(data)
     }
 }
 
@@ -149,7 +149,7 @@ pub trait Label {
         Oid::from_timestamp_with_rng(unix_epoch_ms(), &mut rand::thread_rng())
     }
 
-    fn new(bytes: [u8; 16]) -> Oid<Self> where Self: Sized {
+    fn from_bytes(bytes: [u8; 16]) -> Oid<Self> where Self: Sized {
         Oid {
             data: bytes,
             marker: Default::default(),
@@ -190,7 +190,7 @@ mod tests {
     #[test]
     fn it_works() {
         let bytes = [1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-        let oid = Team::new(bytes);
+        let oid = Team::from_bytes(bytes);
         println!("{}", oid.short());
         println!("{}", oid);
         assert_eq!(oid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
@@ -212,7 +212,7 @@ mod tests {
     #[cfg(feature = "uuid")]
     fn test_uuid() {
         let bytes = [1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-        let oid = Team::new(bytes);
+        let oid = Team::from_bytes(bytes);
         let uuid: uuid::Uuid = oid.clone().into();
         assert_eq!(uuid.to_string(), "01020304-0506-0708-090a-0b0c0d0e0f10");
         let uuid2 = oid.uuid();

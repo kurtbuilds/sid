@@ -10,6 +10,8 @@ An id scheme. Why another one?
 # Usage
 
 ```rust
+use oid::{new_oid, label};
+
 label!(Team, "team");
 label!(User, "usr");
 label!(Transaction, "tx");
@@ -28,8 +30,17 @@ fn main() {
     // e.g. id: 0da0fa0e02cssbhkanf04c_srb0
     println!("id: {}", id);
 }
-
 ```
+
+# Installation
+
+```toml
+[dependencies]
+oid2 = "*"
+```
+
+Despite `oid2` as the package name, you still import it as `use oid::{}`.
+
 # Roadmap
 
 - [ ] Create a postgres extension to store oids as u128, but have it display in human readable form.
