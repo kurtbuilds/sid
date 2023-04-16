@@ -2,5 +2,16 @@
 members = [
     "cli",
     "oid",
-    "oid-pg",
+    "pg",
+    "encode",
 ]
+
+# These profiles come from oid-pg. Not touching them for now.
+[profile.dev]
+panic = "unwind"
+
+[profile.release]
+panic = "unwind"
+opt-level = 3
+lto = "fat"
+codegen-units = 1

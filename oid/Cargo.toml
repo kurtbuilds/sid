@@ -15,7 +15,8 @@ default = ["rand", "chrono"]
 
 [dependencies]
 rand = { version = "0.8.5", optional = true }
-sqlx = { version = "0.6.3", optional = true , features = ["runtime-tokio-rustls"]}
+sqlx = { version = "0.6.3", optional = true, features = ["runtime-tokio-rustls"] }
 uuid = { version = "1.3.1", optional = true }
 chrono = { version = "0.4.24", optional = true }
 time = { version = "0.3.20", optional = true }
+oid-encode = { path = "../encode" }

@@ -6,11 +6,10 @@ pgx::pg_module_magic!();
 #[inoutfuncs]
 struct Oid {
     data: [u8; 16],
+    label: String,
 }
 
 impl InOutFuncs for Oid {
-
-    // parse the provided CStr into a `PgVarlena<MyType>`
     fn input(input: &core::ffi::CStr) -> Self {
         let mut iter = input.to_str().unwrap().split('_');
         let (a, b, c) = (iter.next(), iter.next(), iter.next());
@@ -20,6 +19,7 @@ impl InOutFuncs for Oid {
         result.b = f32::from_str(b.unwrap()).expect("b is not a valid f32");
         result.c = i64::from_str(c.unwrap()).expect("c is not a valid i64");
         result
+        Oid
     }
 
     // Output ourselves as text into the provided `StringInfo` buffer
