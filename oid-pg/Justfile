@@ -2,19 +2,16 @@ set dotenv-load
 set positional-arguments
 
 run *ARGS:
-    cargo run -- "$@"
+    cargo pgx run
 
 test *ARGS:
-    cd oid && just test
+    cargo pgx test
 
 build:
     cargo build
 
 install:
-    cd cli && cargo install --path .
+    cargo install --path .
 
 check:
     cargo check
-
-alphabet:
-    python3.11 perfect_hash.py

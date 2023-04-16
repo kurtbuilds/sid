@@ -5,7 +5,7 @@ run *ARGS:
     cargo run -- "$@"
 
 test *ARGS:
-    cd oid && just test
+    cargo test --all-features -- "$@"
 
 build:
     cargo build
@@ -15,6 +15,3 @@ install:
 
 check:
     cargo check
-
-alphabet:
-    python3.11 perfect_hash.py

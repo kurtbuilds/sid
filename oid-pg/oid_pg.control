@@ -1,0 +1,5 @@
+comment = 'oid_pg:  Created by pgx'
+default_version = '@CARGO_VERSION@'
+module_pathname = '$libdir/oid_pg'
+relocatable = false
+superuser = true
