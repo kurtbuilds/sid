@@ -2,5 +2,5 @@
 members = [
     "cli",
     "oid",
-    "oid_pg",
+    "oid-pg",
 ]
