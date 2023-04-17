@@ -11,9 +11,9 @@ An id scheme. Why another one?
   sid: `team_0da0fa0e02cssbhkanf04c_srb0`
 - **Compatible** - The data is a u128, making it interoperable with both `uuid` and `ulid` libraries.
 
-When generating a random `sid`, data is generated using the same schema as (non-sequential) ulid, where the first 40 
-bits are a timestamp, and the remaining 88 bits are random. 40 bits of a second precision timestamp means id generation
-will wrap in 34,000 years.
+By default, a random `sid` is generated with the first 40 bits as a second-precision timestamp, and the remaining 88
+bits are random (similar to `ulid`). 40 bits of a second precision timestamp means id generation will wrap 
+in 34,000 years.
 
 # Usage
 
