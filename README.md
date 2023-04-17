@@ -53,6 +53,16 @@ fn main() {
 }
 ```
 
+### Postgres
+
+Note if you use the postgres extension, the label is capped at 8 bytes (ascii chars) in length.
+
+You can install the extension with:
+
+```
+cd pg && just install
+```
+
 # Installation
 
 ```toml
