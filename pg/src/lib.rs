@@ -226,6 +226,12 @@ fn sid_new(label: &str) -> Sid {
     Sid::new(data, label)
 }
 
+#[pg_extern]
+fn sid_from_uuid(uuid: pgx::Uuid, label: &str) -> Sid {
+    let &data = uuid.as_bytes();
+    Sid::new(data, label)
+}
+
 #[cfg(any(test, feature = "pg_test"))]
 #[pg_schema]
 mod tests {

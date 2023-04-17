@@ -2,7 +2,8 @@ set dotenv-load
 set positional-arguments
 
 run *ARGS:
-    cargo pgx run
+    echo 'drop extension if exists sid; create extension sid;' | cargo pgx run
+    cargo pgx connect
 
 test *ARGS:
     cargo test
@@ -16,3 +17,6 @@ install:
 
 check:
     cargo check
+
+release:
+    cargo pgx package
