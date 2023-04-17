@@ -1,12 +1,12 @@
 [workspace]
 members = [
     "cli",
-    "oid",
+    "sid",
     "pg",
     "encode",
 ]
 
-# These profiles come from oid-pg. Not touching them for now.
+# These profiles come from sid-pg. Not touching them for now.
 [profile.dev]
 panic = "unwind"
 

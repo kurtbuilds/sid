@@ -1,0 +1,5 @@
+comment = 'sid:  Created by pgx'
+default_version = '@CARGO_VERSION@'
+module_pathname = '$libdir/sid_pg'
+relocatable = false
+superuser = true

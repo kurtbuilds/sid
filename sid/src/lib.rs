@@ -2,8 +2,8 @@ use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 
 pub use label::Label;
-use oid_encode::{base32_encode, base32_decode, SHORT_LENGTH};
-pub use oid_encode::DecodeError;
+use sid_encode::{base32_encode, base32_decode, SHORT_LENGTH};
+pub use sid_encode::DecodeError;
 
 mod label;
 
@@ -27,12 +27,12 @@ fn unix_epoch_ms() -> u64 {
 pub struct NoLabel;
 
 #[derive(PartialOrd, PartialEq, Eq, Ord, Hash, Copy)]
-pub struct Oid<T = NoLabel> {
+pub struct Sid<T = NoLabel> {
     data: [u8; 16],
     marker: std::marker::PhantomData<T>,
 }
 
-impl<T> Clone for Oid<T> {
+impl<T> Clone for Sid<T> {
     fn clone(&self) -> Self {
         Self {
             data: self.data,
@@ -41,18 +41,18 @@ impl<T> Clone for Oid<T> {
     }
 }
 
-pub fn new_oid() -> Oid {
-    NoLabel::oid()
+pub fn new_sid() -> Sid {
+    NoLabel::sid()
 }
 
-impl<T: Label> Oid<T> {
+impl<T: Label> Sid<T> {
     #[cfg(feature = "rand")]
     pub fn from_timestamp_with_rng<R>(timestamp: u64, rng: &mut R) -> Self
         where
             R: rand::Rng,
     {
         if (timestamp & 0xFFFF_0000_0000_0000) != 0 {
-            panic!("oid does not support timestamps after +10889-08-02T05:31:50.655Z");
+            panic!("sid does not support timestamps after +10889-08-02T05:31:50.655Z");
         }
         let high = timestamp << 16 | u64::from(rng.gen::<u16>());
         let low = rng.gen::<u64>();
@@ -89,14 +89,14 @@ impl<T: Label> Oid<T> {
 }
 
 #[cfg(feature = "uuid")]
-impl<T> Into<uuid::Uuid> for Oid<T> {
+impl<T> Into<uuid::Uuid> for Sid<T> {
     fn into(self) -> uuid::Uuid {
         uuid::Uuid::from_bytes(self.data)
     }
 }
 
 #[cfg(feature = "uuid")]
-impl<T: Label> From<uuid::Uuid> for Oid<T> {
+impl<T: Label> From<uuid::Uuid> for Sid<T> {
     fn from(value: uuid::Uuid) -> Self {
         let bytes = value.as_ref();
         let mut data: [u8; 16] = [0; 16];
@@ -105,7 +105,7 @@ impl<T: Label> From<uuid::Uuid> for Oid<T> {
     }
 }
 
-impl<T: Label> FromStr for Oid<T> {
+impl<T: Label> FromStr for Sid<T> {
     type Err = DecodeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -114,7 +114,17 @@ impl<T: Label> FromStr for Oid<T> {
     }
 }
 
-impl<T: Label> Debug for Oid<T> {
+impl<T: Label> Debug for Sid<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let encoded = base32_encode(&self.data);
+        write!(f, "{}_{}",
+               &encoded[..SHORT_LENGTH],
+               &encoded[SHORT_LENGTH..],
+        )
+    }
+}
+
+impl<T: Label> Display for Sid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let encoded = base32_encode(&self.data);
         write!(f, "{}{}_{}",
@@ -125,31 +135,25 @@ impl<T: Label> Debug for Oid<T> {
     }
 }
 
-
 #[macro_export]
-macro_rules! oid {
+macro_rules! sid {
     ($value:ident) => {
-        oid!(stringify!($value))
+        sid!(stringify!($value))
     };
     ($value:expr) => {{
         let value = $value;
         let count = value.matches('_').count();
         match count {
-            1 => Oid::from_str(value).unwrap(),
+            1 => Sid::from_str(value).unwrap(),
             2 => {
                 let value = value.splitn(2, '_').nth(1).unwrap();
-                Oid::<_>::from_str(value).unwrap()
+                Sid::<_>::from_str(value).unwrap()
             },
-            _ => panic!("oid must have 1 or 2 underscores."),
+            _ => panic!("sid must have 1 or 2 underscores."),
         }
     }};
 }
 
-impl<T: Label> Display for Oid<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -162,43 +166,42 @@ mod tests {
     #[test]
     fn it_works() {
         let bytes = [1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-        let oid = Team::from_bytes(bytes);
-        println!("{}", oid.short());
-        println!("{}", oid);
-        assert_eq!(oid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
-        assert_eq!(oid.short(), "team_srb0");
+        let sid = Team::from_bytes(bytes);
+        println!("{}", sid.short());
+        println!("{}", sid);
+        assert_eq!(sid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
+        assert_eq!(sid.short(), "team_srb0");
     }
 
     #[test]
     fn test_null() {
-        let oid = Team::null();
-        println!("{}", oid.short());
-        println!("{}", oid);
-        assert_eq!(oid.to_string(), "team_0000000000000000000000_0000");
-        assert_eq!(oid.short(), "team_0000");
-        let oid = NoLabel::null();
-        assert_eq!(oid.to_string(), "0000000000000000000000_0000");
+        let sid = Team::null();
+        println!("{}", sid.short());
+        println!("{}", sid);
+        assert_eq!(sid.to_string(), "team_0000000000000000000000_0000");
+        assert_eq!(sid.short(), "team_0000");
+        let sid = NoLabel::null();
+        assert_eq!(sid.to_string(), "0000000000000000000000_0000");
     }
 
     #[test]
     #[cfg(feature = "uuid")]
     fn test_uuid() {
         let bytes = [1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-        let oid = Team::from_bytes(bytes);
-        let uuid: uuid::Uuid = oid.clone().into();
+        let sid = Team::from_bytes(bytes);
+        let uuid: uuid::Uuid = sid.clone().into();
         assert_eq!(uuid.to_string(), "01020304-0506-0708-090a-0b0c0d0e0f10");
-        let uuid2 = oid.uuid();
+        let uuid2 = sid.uuid();
         assert_eq!(uuid, uuid2);
     }
 
     #[test]
     fn test_macro() {
-        let oid: Oid<Team> = oid!("team_0000000000000000000000_0000");
-        assert!(oid.is_null(), "{}", oid);
-        let oid: Oid<Team> = oid!(team_0000000000000000000000_0000);
-        assert!(oid.is_null(), "{}", oid);
-        let oid: Oid<Team> = oid!(team_0da0fa0e02cssbhkanf04c_srb0);
-        dbg!(oid.data());
-        assert_eq!(oid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
+        let sid: Sid<Team> = sid!("team_0000000000000000000000_0000");
+        assert!(sid.is_null(), "{}", sid);
+        let sid: Sid<Team> = sid!(team_0000000000000000000000_0000);
+        assert!(sid.is_null(), "{}", sid);
+        let sid: Sid<Team> = sid!(team_0da0fa0e02cssbhkanf04c_srb0);
+        assert_eq!(sid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
     }
 }

@@ -20,7 +20,7 @@ pub const SHORT_LENGTH: usize = 22;
 
 pub fn base32_decode(input: &str) -> Result<[u8; 16], DecodeError> {
     if input.len() != 27 || input.as_bytes()[SHORT_LENGTH] != b'_' {
-        return Err(DecodeError("Malformed input.".to_string()));
+        return Err(DecodeError("Malformed input. If input contains a label, strip it first.".to_string()));
     }
 
     let mut decoded: [u8; 16] = [0; 16];

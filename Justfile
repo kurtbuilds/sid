@@ -5,7 +5,7 @@ run *ARGS:
     cargo run -- "$@"
 
 test *ARGS:
-    cd oid && just test
+    cd sid && just test
 
 build:
     cargo build
