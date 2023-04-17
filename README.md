@@ -80,4 +80,4 @@ Despite `sid2` as the package name, you still import it as `use sid::{}`.
 
 # Roadmap
 
-- [ ] Create a postgres extension to store sids as u128, but have it display in human readable form.
+- [x] Create a postgres extension to store sids as u128, but have it display in human readable form.
