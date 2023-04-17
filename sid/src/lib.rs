@@ -8,9 +8,9 @@ pub use sid_encode::DecodeError;
 
 mod label;
 
-fn unix_epoch_ms() -> u64 {
+fn unix_epoch_sec() -> u64 {
     use std::time::SystemTime;
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64
+    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as u64
 }
 
 pub struct NoLabel;
@@ -62,10 +62,11 @@ impl<T: Label> Sid<T> {
         where
             R: rand::Rng,
     {
-        if (timestamp & 0xFFFF_0000_0000_0000) != 0 {
+        if (timestamp & 0xFFFF_FF00_0000_0000) != 0 {
             panic!("sid does not support timestamps after +10889-08-02T05:31:50.655Z");
         }
-        let high = timestamp << 16 | u64::from(rng.gen::<u16>());
+        let rand_high = rng.gen::<u32>() as u64 & 0xFFFF_FFFF_FFFF;
+        let high = timestamp << 24 | rand_high;
         let low = rng.gen::<u64>();
         let high = high.to_be_bytes();
         let low = low.to_be_bytes();
@@ -246,7 +247,7 @@ mod tests {
 
     #[test]
     fn test_sort() {
-        let ts = unix_epoch_ms();
+        let ts = unix_epoch_sec();
         let ts2 = ts + 1;
         let ts3 = ts + 2;
         let rng = &mut rand::thread_rng();

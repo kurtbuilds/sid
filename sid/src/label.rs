@@ -11,7 +11,7 @@ pub trait Label {
 
     #[cfg(feature = "rand")]
     fn sid() -> Sid<Self> where Self: Sized {
-        Sid::from_timestamp_with_rng(crate::unix_epoch_ms(), &mut rand::thread_rng())
+        Sid::from_timestamp_with_rng(crate::unix_epoch_sec(), &mut rand::thread_rng())
     }
 
     fn from_bytes(bytes: [u8; 16]) -> Sid<Self> where Self: Sized {

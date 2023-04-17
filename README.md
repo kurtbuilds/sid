@@ -2,17 +2,18 @@
 
 An id scheme. Why another one?
 
-- **Lexicographically Sorted** - `uuidv4` is fully random and can explode the size of database indexes.
-  Like `ulid`, `sid` is lexicographically sortable.
-- **Named** - sids can be unlabeled, or prefixed with a name, like `team_0da0fa0e02cssbhkanf04c_srb0`
+- **Lexicographically sorted** - The first 40 bits of `sid` are a second precision timestamp, which can be lexically 
+  sorted as strings (similar to `ulid`). This keeps database indexes small, unlike `uuid` which can explode index size.
+- **Named** - sids can be labeled, e.g. `usr_0da0fa0e02cssbhkanf04c_srb0` or unlabeled.
 - **Readable and memorable** - sid has a 4 character suffix, which is easy to remember, speak, and type, for quick
   visual and verbal comparison.
-- **double-click-copyable** - Try double clicking this uuid: `a827f03c-f5b0-40ef-8d53-3fb3cdf4e055`. Then try this
+- **Double-click-copyable** - Try double clicking this uuid: `a827f03c-f5b0-40ef-8d53-3fb3cdf4e055`. Then try this
   sid: `team_0da0fa0e02cssbhkanf04c_srb0`
-- **compatible** - The data is a u128, meaning it is interoperable with both `uuid` and `ulid` libraries.
+- **Compatible** - The data is a u128, making it interoperable with both `uuid` and `ulid` libraries.
 
-When generating a random `sid`, data is generated using the same schema as (non-sequential) ulid, where the first 48 
-bits are a timestamp, and the remaining 80 bits are random.
+When generating a random `sid`, data is generated using the same schema as (non-sequential) ulid, where the first 40 
+bits are a timestamp, and the remaining 88 bits are random. 40 bits of a second precision timestamp means id generation
+will wrap in 34,000 years.
 
 # Usage
 

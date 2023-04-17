@@ -212,9 +212,10 @@ fn sid_new(label: &str) -> Sid {
     use std::time::SystemTime;
     use rand::Rng;
 
-    let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64;
+    let timestamp = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as u64;
     let rng = &mut ::rand::thread_rng();
-    let high = timestamp << 16 | u64::from(rng.gen::<u16>());
+    let rand_high = rng.gen::<u32>() as u64 & 0xFFFF_FFFF_FFFF;
+    let high = timestamp << 24 | rand_high;
     let low = rng.gen::<u64>();
     let high = high.to_le_bytes();
     let low = low.to_le_bytes();
