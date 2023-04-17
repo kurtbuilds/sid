@@ -8,20 +8,9 @@ pub use sid_encode::DecodeError;
 mod label;
 
 
-#[cfg(all(feature = "rand", any(feature = "chrono", feature = "time")))]
 fn unix_epoch_ms() -> u64 {
-    #[cfg(feature = "time")]
-    {
-        let now = time::OffsetDateTime::now_utc();
-
-        now.unix_timestamp() as u64 * 1_000 + now.millisecond() as u64
-    }
-    #[cfg(all(feature = "chrono", not(feature = "time")))]
-    {
-        let now: chrono::DateTime<chrono::Utc> = chrono::Utc::now();
-
-        now.timestamp_millis() as u64
-    }
+    use std::time::SystemTime;
+    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64
 }
 
 pub struct NoLabel;
@@ -41,8 +30,8 @@ impl<T> Clone for Sid<T> {
     }
 }
 
-pub fn new_sid() -> Sid {
-    NoLabel::sid()
+pub fn sid<T: Label>() -> Sid<T> {
+    T::sid()
 }
 
 impl<T: Label> Sid<T> {
@@ -147,7 +136,7 @@ macro_rules! sid {
             1 => Sid::from_str(value).unwrap(),
             2 => {
                 let value = value.splitn(2, '_').nth(1).unwrap();
-                Sid::<_>::from_str(value).unwrap()
+                Sid::from_str(value).unwrap()
             },
             _ => panic!("sid must have 1 or 2 underscores."),
         }
@@ -162,6 +151,22 @@ mod tests {
     use super::*;
 
     label!(Team, "team");
+
+    #[test]
+    fn test_struct_sid_can_reference_itself() {
+        struct Team {
+            id: Sid<Self>,
+        }
+
+        impl Label for Team {
+            fn label() -> &'static str {
+                "tea_"
+            }
+        }
+
+        let f = Team { id: sid() };
+        assert!(f.id.to_string().starts_with("tea_"));
+    }
 
     #[test]
     fn it_works() {
@@ -203,5 +208,10 @@ mod tests {
         assert!(sid.is_null(), "{}", sid);
         let sid: Sid<Team> = sid!(team_0da0fa0e02cssbhkanf04c_srb0);
         assert_eq!(sid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
+    }
+
+    #[test]
+    fn test_size() {
+        assert_eq!(std::mem::size_of::<Sid<Team>>(), 16);
     }
 }

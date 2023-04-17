@@ -74,3 +74,9 @@ pub fn base32_encode(data: &[u8]) -> String {
 
     result
 }
+
+#[cfg(test)]
+mod test {
+    use std::num::NonZeroU64;
+    use super::*;
+}

@@ -19,6 +19,7 @@ pg_test = []
 pgx = "=0.7.4"
 sid-encode = { path = "../encode" }
 serde = { version = "1.0.160", features = ["derive"] }
+rand = "0.8.5"
 
 [dev-dependencies]
 pgx-tests = "=0.7.4"

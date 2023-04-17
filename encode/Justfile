@@ -2,11 +2,10 @@ set dotenv-load
 set positional-arguments
 
 run *ARGS:
-    cargo pgx run
+    cargo run -- "$@"
 
 test *ARGS:
-    cargo test
-    # cargo pgx test
+    cargo test -- "$@"
 
 build:
     cargo build
