@@ -63,6 +63,12 @@ You can install the extension with:
 cd pg && just install
 ```
 
+In databases where you want to use the extension, you must create it:
+
+```sql
+CREATE EXTENSION sid;
+```
+
 # Installation
 
 ```toml
