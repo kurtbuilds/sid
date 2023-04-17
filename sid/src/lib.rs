@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 
@@ -7,7 +8,6 @@ pub use sid_encode::DecodeError;
 
 mod label;
 
-
 fn unix_epoch_ms() -> u64 {
     use std::time::SystemTime;
     SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64
@@ -15,10 +15,32 @@ fn unix_epoch_ms() -> u64 {
 
 pub struct NoLabel;
 
-#[derive(PartialOrd, PartialEq, Eq, Ord, Hash, Copy)]
+#[derive(Hash, Copy)]
 pub struct Sid<T = NoLabel> {
     data: [u8; 16],
     marker: std::marker::PhantomData<T>,
+}
+
+impl<T> PartialEq<Self> for Sid<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.data == other.data
+    }
+}
+
+impl<T> PartialOrd<Self> for Sid<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<T> Eq for Sid<T> {
+
+}
+
+impl<T> Ord for Sid<T> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.data.cmp(&other.data)
+    }
 }
 
 impl<T> Clone for Sid<T> {
@@ -45,8 +67,8 @@ impl<T: Label> Sid<T> {
         }
         let high = timestamp << 16 | u64::from(rng.gen::<u16>());
         let low = rng.gen::<u64>();
-        let high = high.to_le_bytes();
-        let low = low.to_le_bytes();
+        let high = high.to_be_bytes();
+        let low = low.to_be_bytes();
 
         let mut data: [u8; 16] = [0; 16];
         data[..8].copy_from_slice(&high);
@@ -58,9 +80,17 @@ impl<T: Label> Sid<T> {
         }
     }
 
+    /// Only the short suffix of the sid, with label, e.g. usr_t40x
     pub fn short(&self) -> String {
         let encoded = base32_encode(&self.data);
-        format!("{}{}", T::label(), &encoded[SHORT_LENGTH..])
+        let label = T::label();
+        let separator = if label.is_empty() { "" } else { "_" };
+        format!("{}{}{}", label, separator, &encoded[SHORT_LENGTH..])
+    }
+
+    /// String representation of the SID with the label removed, e.g. 0da0fa0e02cssbhkanf04c_srb0
+    pub fn strip(&self) -> String {
+        NoLabel::from_bytes(self.data).to_string()
     }
 
     pub fn is_null(&self) -> bool {
@@ -105,19 +135,18 @@ impl<T: Label> FromStr for Sid<T> {
 
 impl<T: Label> Debug for Sid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let encoded = base32_encode(&self.data);
-        write!(f, "{}_{}",
-               &encoded[..SHORT_LENGTH],
-               &encoded[SHORT_LENGTH..],
-        )
+        write!(f, "{}", self)
     }
 }
 
 impl<T: Label> Display for Sid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let encoded = base32_encode(&self.data);
-        write!(f, "{}{}_{}",
-               T::label(),
+        let label = T::label();
+        let sep = if label.is_empty() { "" } else { "_" };
+        write!(f, "{}{}{}_{}",
+               label,
+               sep,
                &encoded[..SHORT_LENGTH],
                &encoded[SHORT_LENGTH..],
         )
@@ -174,8 +203,8 @@ mod tests {
         let sid = Team::from_bytes(bytes);
         println!("{}", sid.short());
         println!("{}", sid);
-        assert_eq!(sid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
-        assert_eq!(sid.short(), "team_srb0");
+        assert_eq!(sid.to_string(), "team_052072060s4hh39b2d70u4_hg30");
+        assert_eq!(sid.short(), "team_hg30");
     }
 
     #[test]
@@ -213,5 +242,19 @@ mod tests {
     #[test]
     fn test_size() {
         assert_eq!(std::mem::size_of::<Sid<Team>>(), 16);
+    }
+
+    #[test]
+    fn test_sort() {
+        let ts = unix_epoch_ms();
+        let ts2 = ts + 1;
+        let ts3 = ts + 2;
+        let rng = &mut rand::thread_rng();
+        let sid1 = Sid::<NoLabel>::from_timestamp_with_rng(ts, rng);
+        let sid2 = Sid::from_timestamp_with_rng(ts2, rng);
+        let sid3 = Sid::from_timestamp_with_rng(ts3, rng);
+        let mut sids = vec![sid3.clone(), sid1.clone(), sid2.clone()];
+        sids.sort();
+        assert_eq!(sids, vec![sid1, sid2, sid3]);
     }
 }

@@ -2,19 +2,36 @@
 
 An id scheme. Why another one?
 
-- `lexicographically sortable` - `uuidv4` is not sorted and will explode database indexes. Like `ulid`, `sid` is lexicographically sortable.
-- named - sid can be prefixed with a name, like `team_0da0fa0e02cssbhkanf04c_srb0`
-- short-codable - sid can be written in shortform like `team_srb0`
-- double-click-copyable - try double clicking this uuid: `a827f03c-f5b0-40ef-8d53-3fb3cdf4e055`. Then try this `sid`: `team_0da0fa0e02cssbhkanf04c_srb0`
+- **Lexicographically Sorted** - `uuidv4` is fully random and can explode the size of database indexes.
+  Like `ulid`, `sid` is lexicographically sortable.
+- **Named** - sids can be unlabeled, or prefixed with a name, like `team_0da0fa0e02cssbhkanf04c_srb0`
+- **Readable and memorable** - sid has a 4 character suffix, which is easy to remember, speak, and type, for quick
+  visual and verbal comparison.
+- **double-click-copyable** - Try double clicking this uuid: `a827f03c-f5b0-40ef-8d53-3fb3cdf4e055`. Then try this
+  sid: `team_0da0fa0e02cssbhkanf04c_srb0`
+- **compatible** - The data is a u128, meaning it is interoperable with both `uuid` and `ulid` libraries.
+
+When generating a random `sid`, data is generated using the same schema as (non-sequential) ulid, where the first 48 
+bits are a timestamp, and the remaining 80 bits are random.
 
 # Usage
 
 ```rust
-use sid::{new_sid, label};
+use sid::{sid, label, Label, Sid, NoLabel};
 
 label!(Team, "team");
 label!(User, "usr");
 label!(Transaction, "tx");
+
+struct MyUser {
+    id: Sid<Self>,
+}
+
+impl Label for MyUser {
+    fn label() -> &'static str {
+        "usr"
+    }
+}
 
 fn main() {
     let id = Team::sid();
@@ -24,11 +41,15 @@ fn main() {
     // e.g. uuid: a827f03c-f5b0-40ef-8d53-3fb3cdf4e055
     println!("short: {}", id.short());
     println!("uuid: {}", id.uuid());
-    
+
     // We didn't use a Label, so it's simply missing.
-    let id = new_sid();
+    let id = NoLabel::sid();
     // e.g. id: 0da0fa0e02cssbhkanf04c_srb0
     println!("id: {}", id);
+  
+    let user = MyUser { id: sid() };
+    // e.g. user.id: usr_0da0fa0e02cssbhkanf04c_srb0
+    println!("user.id: {}", user.id);
 }
 ```
 

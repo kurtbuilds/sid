@@ -6,10 +6,31 @@ impl sid::Label for NoLabel {
     }
 }
 
+use std::io::Read;
+use clap::{Parser};
+use sid::Label;
+
+#[derive(Parser)]
+#[command(author, version, about)]
+struct Cli {
+    uuid: Option<String>,
+}
+
 fn main() {
-    let mut args: Vec<String> = std::env::args().collect();
-    let uuid = args.into_iter().skip(1).next().unwrap();
-    let uuid = uuid::Uuid::parse_str(&uuid).unwrap();
-    let sid = sid::Sid::<NoLabel>::from(uuid);
-    println!("{}", sid);
+    let args = Cli::parse();
+    if let Some(uuid) = args.uuid {
+        let uuid = uuid::Uuid::parse_str(&uuid).unwrap();
+        let sid = sid::Sid::<NoLabel>::from(uuid);
+        println!("{}", sid);
+        //check if has stdin with atty
+    } else if !atty::is(atty::Stream::Stdin) {
+        let mut buffer = String::new();
+        std::io::stdin().read_to_string(&mut buffer).unwrap();
+        let uuid = uuid::Uuid::parse_str(&buffer).unwrap();
+        let sid = sid::Sid::<NoLabel>::from(uuid);
+        println!("{}", sid);
+    } else {
+        let sid = NoLabel::sid();
+        println!("{}", sid);
+    }
 }

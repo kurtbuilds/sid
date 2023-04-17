@@ -1,6 +1,6 @@
 import numpy
 
-alphabet = "0abcdefghjkmnpqrstuvwxyz23456789"
+alphabet = "023456789abcdefghjkmnpqrstuvwxyz"
 
 orig = numpy.array([ord(a) for a in alphabet])
 

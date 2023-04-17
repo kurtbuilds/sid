@@ -9,7 +9,7 @@ impl Label for NoLabel {
 pub trait Label {
     fn label() -> &'static str;
 
-    #[cfg(all(feature = "rand", any(feature = "chrono", feature = "time")))]
+    #[cfg(feature = "rand")]
     fn sid() -> Sid<Self> where Self: Sized {
         Sid::from_timestamp_with_rng(crate::unix_epoch_ms(), &mut rand::thread_rng())
     }
@@ -35,7 +35,7 @@ macro_rules! label {
         pub struct $name;
         impl Label for $name {
             fn label() -> &'static str {
-                concat!($label, "_")
+                concat!($label)
             }
         }
     };
