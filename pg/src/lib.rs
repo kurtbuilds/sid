@@ -273,8 +273,8 @@ mod rust_tests {
 
     #[test]
     fn test_serialize() {
-        let oid = Sid { data: [0; 16], label: Label::new("team") };
-        let serialized = serde_json::to_string(&oid).unwrap();
+        let sid = Sid { data: [0; 16], label: Label::new("team") };
+        let serialized = serde_json::to_string(&sid).unwrap();
         println!("{}", serialized);
         assert_eq!(serialized, "[0,0,1835099508]");
     }
