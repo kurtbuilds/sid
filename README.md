@@ -13,7 +13,7 @@ An id scheme. Why another one?
 
 By default, a random `sid` is generated with the first 40 bits as a second-precision timestamp, and the remaining 88
 bits are random (similar to `ulid`). 40 bits of a second precision timestamp means id generation will wrap 
-in 34,000 years.
+after the year 36,812.
 
 # Usage
 

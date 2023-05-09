@@ -1,11 +1,19 @@
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
-pub struct DecodeError(pub(crate) String);
+pub enum DecodeError {
+    InvalidCharacter(char),
+    InvalidLength,
+    NoSeparator,
+}
 
 impl Display for DecodeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "DecodeError: {}", self.0)
+        match self {
+            DecodeError::InvalidCharacter(c) => write!(f, "Invalid character: {}", c),
+            DecodeError::InvalidLength => write!(f, "Invalid length"),
+            DecodeError::NoSeparator => write!(f, "No separator"),
+        }
     }
 }
 

@@ -1,5 +1,7 @@
+use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::num::NonZeroU64;
+use pgx::pgx_sql_entity_graph::PostgresOrd;
 use pgx::prelude::*;
 use pgx::StringInfo;
 use sid_encode::{base32_encode, base32_decode, SHORT_LENGTH};
@@ -80,12 +82,32 @@ impl Display for Label {
 //     }
 // }
 
-#[derive(Copy, Clone, PostgresType)]
+#[derive(Copy, Clone, PostgresType, PostgresOrd, PostgresEq)]
 #[inoutfuncs]
 #[derive(Debug)]
 pub struct Sid {
     data: [u8; 16],
     label: Option<Label>,
+}
+
+impl Eq for Sid {}
+
+impl PartialEq<Self> for Sid {
+    fn eq(&self, other: &Self) -> bool {
+        self.data == other.data
+    }
+}
+
+impl Ord for Sid {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.data.cmp(&other.data)
+    }
+}
+
+impl PartialOrd<Self> for Sid {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.data.partial_cmp(&other.data)
+    }
 }
 
 impl Sid {
@@ -126,10 +148,8 @@ impl InOutFuncs for Sid {
             }
             buffer.push_str("_");
         }
-        let encoded = base32_encode(&self.data);
-        buffer.push_str(&encoded[..SHORT_LENGTH]);
-        buffer.push_str("_");
-        buffer.push_str(&encoded[SHORT_LENGTH..]);
+        let encoded = base32_encode(self.data);
+        buffer.push_str(&encoded);
     }
 }
 

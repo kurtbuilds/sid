@@ -10,7 +10,7 @@ mod label;
 
 fn unix_epoch_sec() -> u64 {
     use std::time::SystemTime;
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as u64
+    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
 }
 
 pub struct NoLabel;
@@ -62,10 +62,10 @@ impl<T: Label> Sid<T> {
         where
             R: rand::Rng,
     {
-        if (timestamp & 0xFFFF_FF00_0000_0000) != 0 {
-            panic!("sid does not support timestamps after +10889-08-02T05:31:50.655Z");
+        if (timestamp >> 40) != 0 {
+            panic!("sid does not support timestamps after 36812-02-20T00:36:16+00:00");
         }
-        let rand_high = rng.gen::<u32>() as u64 & 0xFFFF_FFFF_FFFF;
+        let rand_high = rng.gen::<u32>() as u64 & ((1 << 20) - 1);
         let high = timestamp << 24 | rand_high;
         let low = rng.gen::<u64>();
         let high = high.to_be_bytes();
@@ -83,10 +83,10 @@ impl<T: Label> Sid<T> {
 
     /// Only the short suffix of the sid, with label, e.g. usr_t40x
     pub fn short(&self) -> String {
-        let encoded = base32_encode(&self.data);
+        let encoded = base32_encode(self.data);
         let label = T::label();
         let separator = if label.is_empty() { "" } else { "_" };
-        format!("{}{}{}", label, separator, &encoded[SHORT_LENGTH..])
+        format!("{}{}{}", label, separator, &encoded[SHORT_LENGTH + 1..])
     }
 
     /// String representation of the SID with the label removed, e.g. 0da0fa0e02cssbhkanf04c_srb0
@@ -142,15 +142,12 @@ impl<T: Label> Debug for Sid<T> {
 
 impl<T: Label> Display for Sid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let encoded = base32_encode(&self.data);
+        let encoded = base32_encode(self.data);
         let label = T::label();
         let sep = if label.is_empty() { "" } else { "_" };
-        write!(f, "{}{}{}_{}",
-               label,
-               sep,
-               &encoded[..SHORT_LENGTH],
-               &encoded[SHORT_LENGTH..],
-        )
+        f.write_str(label)?;
+        f.write_str(sep)?;
+        f.write_str(&encoded)
     }
 }
 
@@ -176,7 +173,10 @@ macro_rules! sid {
 
 #[cfg(test)]
 mod tests {
+    use std::marker::PhantomData;
+    use uuid::Uuid;
     use label::Label;
+    use sid_encode::base32_encode;
 
     use super::*;
 
@@ -204,8 +204,8 @@ mod tests {
         let sid = Team::from_bytes(bytes);
         println!("{}", sid.short());
         println!("{}", sid);
-        assert_eq!(sid.to_string(), "team_052072060s4hh39b2d70u4_hg30");
-        assert_eq!(sid.short(), "team_hg30");
+        assert_eq!(sid.to_string(), "team_02092h92970w50k3hc2h7h_w4sh");
+        assert_eq!(sid.short(), "team_w4sh");
     }
 
     #[test]
@@ -257,5 +257,22 @@ mod tests {
         let mut sids = vec![sid3.clone(), sid1.clone(), sid2.clone()];
         sids.sort();
         assert_eq!(sids, vec![sid1, sid2, sid3]);
+    }
+
+    #[test]
+    fn test_eq() {
+        let mut s = Sid::<Team> {
+            data: [0u8; 16],
+            marker: PhantomData,
+        };
+        s.data[15] = 3;
+        println!("{:?}", s.data);
+        let s = base32_encode(s.data);
+        println!("{}", s);
+
+        let s = base32_decode("0000000000000000000002_0005").unwrap();
+        let sid1: Sid<Team> = sid!("team_0da0fa0e02cssbhkanf04c_sr02");
+        let sid2: Sid<Team> = sid!("team_0da0fa0e02cssbhkanf04c_sr34");
+        assert_ne!(sid1, sid2);
     }
 }
