@@ -13,6 +13,7 @@ fn unix_epoch_sec() -> u64 {
     SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
 }
 
+#[derive(Hash, Copy, Clone)]
 pub struct NoLabel;
 
 #[derive(Hash, Copy)]
