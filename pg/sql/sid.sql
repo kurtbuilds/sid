@@ -1,62 +1,51 @@
-CREATE TYPE sid AS (
-    tag int4,
-    bytes uuid
-);
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE OR REPLACE FUNCTION sid_input(input_string text)
-RETURNS sid
-AS $$
+CREATE OR REPLACE FUNCTION generate_ulid() RETURNS uuid
+    AS $$
+        SELECT (lpad(to_hex(floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint), 12, '0') || encode(gen_random_bytes(10), 'hex'))::uuid;
+    $$ LANGUAGE SQL;
+
+
+select generate_ulid();
+
+CREATE OR REPLACE FUNCTION uuid_to_sid(id uuid) RETURNS text AS $$
 DECLARE
-    result sid;
-    tag_string text;
-    tag int4;
-    bytes uuid;
-    len integer;
+  encoding   bytea = '0123456789abcdefghjkmnpqrstvwxyz';
+  output     text  = '';
+  uuid_bytes bytea = uuid_send(id);
 BEGIN
-    len := LENGTH(input_string);
-    if len = 27 then
-    	tag := 0;
-    else
-    	tag_string := substring(input_string for (len - 27));
-    	tag := ascii(substring(tag_string from 1))
-    	     + ascii(substring(tag_string from 2)) << 8
-    	     + ascii(substring(tag_string from 3)) << 16
-    	     + ascii(substring(tag_string from 4)) << 24;
-    	input_string := substring(input_string from (len - 25));
-    end if;
+  -- Encode the timestamp
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 0) & 224) >> 5));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 0) & 31)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 1) & 248) >> 3));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 1) & 7) << 2) | ((GET_BYTE(uuid_bytes, 2) & 192) >> 6)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 2) & 62) >> 1));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 2) & 1) << 4) | ((GET_BYTE(uuid_bytes, 3) & 240) >> 4)));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 3) & 15) << 1) | ((GET_BYTE(uuid_bytes, 4) & 128) >> 7)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 4) & 124) >> 2));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 4) & 3) << 3) | ((GET_BYTE(uuid_bytes, 5) & 224) >> 5)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 5) & 31)));
 
-    bytes := uuid_nil();
-
-    result := sid(tag, bytes);
-    RETURN result;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION sid_output(value sid)
-RETURNS text
-AS $$
-DECLARE
-    output_string text;
-BEGIN
-	output_string := chr(sid.tag)
-	             || chr(sid.tag >> 8)
-	             || chr(sid.tag >> 16)
-	             || chr(sid.tag >> 24);
-	IF sid.tag <> 0 THEN
-		output_string := output_string || '_';
-	END IF;
-    RETURN output_string;
-END;
-$$ LANGUAGE plpgsql;
-
-
--- create sid in the database
-
-
-
-
--- convert uuid to sid
-
-
-
--- convert sid to uuid
+  -- Encode the entropy
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 6) & 248) >> 3));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 6) & 7) << 2) | ((GET_BYTE(uuid_bytes, 7) & 192) >> 6)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 7) & 62) >> 1));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 7) & 1) << 4) | ((GET_BYTE(uuid_bytes, 8) & 240) >> 4)));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 8) & 15) << 1) | ((GET_BYTE(uuid_bytes, 9) & 128) >> 7)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 9) & 124) >> 2));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 9) & 3) << 3) | ((GET_BYTE(uuid_bytes, 10) & 224) >> 5)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 10) & 31)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 11) & 248) >> 3));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 11) & 7) << 2) | ((GET_BYTE(uuid_bytes, 12) & 192) >> 6)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 12) & 62) >> 1));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 12) & 1) << 4) | ((GET_BYTE(uuid_bytes, 13) & 240) >> 4)));
+  output = output || '_';
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 13) & 15) << 1) | ((GET_BYTE(uuid_bytes, 14) & 128) >> 7)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 14) & 124) >> 2));
+  output = output || CHR(GET_BYTE(encoding, ((GET_BYTE(uuid_bytes, 14) & 3) << 3) | ((GET_BYTE(uuid_bytes, 15) & 224) >> 5)));
+  output = output || CHR(GET_BYTE(encoding, (GET_BYTE(uuid_bytes, 15) & 31)));
+  RETURN output;
+END
+$$
+LANGUAGE plpgsql
+IMMUTABLE;
