@@ -18,3 +18,7 @@ check:
 
 alphabet:
     python3.11 perfect_hash.py
+
+publish:
+    cd encode && cargo publish
+    cd sid && cargo publish
