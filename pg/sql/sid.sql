@@ -48,3 +48,15 @@ BEGIN
     RETURN output_string;
 END;
 $$ LANGUAGE plpgsql;
+
+
+-- create sid in the database
+
+
+
+
+-- convert uuid to sid
+
+
+
+-- convert sid to uuid

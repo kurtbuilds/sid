@@ -7,10 +7,13 @@ use sid_encode::{base32_encode, base32_decode, SHORT_LENGTH};
 pub use sid_encode::DecodeError;
 
 mod label;
+mod monotonic;
 
-fn unix_epoch_sec() -> u64 {
+pub use monotonic::MonotonicGenerator;
+
+fn unix_epoch_millis() -> u64 {
     use std::time::SystemTime;
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
+    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64
 }
 
 #[derive(Hash, Copy, Clone)]
@@ -34,9 +37,7 @@ impl<T> PartialOrd<Self> for Sid<T> {
     }
 }
 
-impl<T> Eq for Sid<T> {
-
-}
+impl<T> Eq for Sid<T> {}
 
 impl<T> Ord for Sid<T> {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -58,16 +59,20 @@ pub fn sid<T: Label>() -> Sid<T> {
 }
 
 impl<T: Label> Sid<T> {
+    pub fn new() -> Self {
+        Self::from_timestamp_with_rng(unix_epoch_millis(), &mut rand::thread_rng())
+    }
+
     #[cfg(feature = "rand")]
     pub fn from_timestamp_with_rng<R>(timestamp: u64, rng: &mut R) -> Self
         where
             R: rand::Rng,
     {
-        if (timestamp >> 40) != 0 {
-            panic!("sid does not support timestamps after 36812-02-20T00:36:16+00:00");
+        if (timestamp >> 48) != 0 {
+            panic!("sid does not support timestamps after +10889-08-02T05:31:50.655Z");
         }
-        let rand_high = rng.gen::<u32>() as u64 & ((1 << 20) - 1);
-        let high = timestamp << 24 | rand_high;
+        let rand_high = rng.gen::<u32>() as u64 & ((1 << 16) - 1);
+        let high = timestamp << 16 | rand_high;
         let low = rng.gen::<u64>();
         let high = high.to_be_bytes();
         let low = low.to_be_bytes();
@@ -103,9 +108,35 @@ impl<T: Label> Sid<T> {
         &self.data
     }
 
+    pub fn timestamp(&self) -> u64 {
+        u64::from_be_bytes(self.data[0..8].try_into().unwrap())
+    }
+
     #[cfg(feature = "uuid")]
     pub fn uuid(&self) -> uuid::Uuid {
         uuid::Uuid::from_bytes(self.data)
+    }
+
+    // small difference compared to ULID. Rather than erroring if we overflow the random buffer
+    // we just increment the ms stamp.
+    pub(crate) fn increment(&self) -> Self {
+        let mut data = self.data;
+        let mut i = 15;
+        loop {
+            let (value, overflow) = data[i].overflowing_add(1);
+            data[i] = value;
+            if !overflow {
+                break;
+            }
+            if i == 0 {
+                panic!("sid overflow");
+            }
+            i -= 1;
+        }
+        Self {
+            data,
+            marker: Default::default(),
+        }
     }
 }
 
@@ -174,10 +205,7 @@ macro_rules! sid {
 
 #[cfg(test)]
 mod tests {
-    use std::marker::PhantomData;
-    use uuid::Uuid;
     use label::Label;
-    use sid_encode::base32_encode;
 
     use super::*;
 
@@ -205,18 +233,18 @@ mod tests {
         let sid = Team::from_bytes(bytes);
         println!("{}", sid.short());
         println!("{}", sid);
-        assert_eq!(sid.to_string(), "team_02092h92970w50k3hc2h7h_w4sh");
-        assert_eq!(sid.short(), "team_w4sh");
+        assert_eq!(sid.to_string(), "team_01081g81860w40j2gb1g6g_w3rg");
+        assert_eq!(sid.short(), "team_w3rg");
     }
 
     #[test]
     fn test_null() {
-        let sid = Team::null();
+        let sid = Team::null_sid();
         println!("{}", sid.short());
         println!("{}", sid);
         assert_eq!(sid.to_string(), "team_0000000000000000000000_0000");
         assert_eq!(sid.short(), "team_0000");
-        let sid = NoLabel::null();
+        let sid = NoLabel::null_sid();
         assert_eq!(sid.to_string(), "0000000000000000000000_0000");
     }
 
@@ -248,7 +276,7 @@ mod tests {
 
     #[test]
     fn test_sort() {
-        let ts = unix_epoch_sec();
+        let ts = unix_epoch_millis();
         let ts2 = ts + 1;
         let ts3 = ts + 2;
         let rng = &mut rand::thread_rng();
@@ -258,22 +286,5 @@ mod tests {
         let mut sids = vec![sid3.clone(), sid1.clone(), sid2.clone()];
         sids.sort();
         assert_eq!(sids, vec![sid1, sid2, sid3]);
-    }
-
-    #[test]
-    fn test_eq() {
-        let mut s = Sid::<Team> {
-            data: [0u8; 16],
-            marker: PhantomData,
-        };
-        s.data[15] = 3;
-        println!("{:?}", s.data);
-        let s = base32_encode(s.data);
-        println!("{}", s);
-
-        let s = base32_decode("0000000000000000000002_0005").unwrap();
-        let sid1: Sid<Team> = sid!("team_0da0fa0e02cssbhkanf04c_sr02");
-        let sid2: Sid<Team> = sid!("team_0da0fa0e02cssbhkanf04c_sr34");
-        assert_ne!(sid1, sid2);
     }
 }

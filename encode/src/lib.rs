@@ -3,17 +3,18 @@ mod error;
 pub use error::DecodeError;
 
 static ALPHABET: [char; 32] = [
-    '0', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd',
-    'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't',
-    'u', 'v', 'w', 'x', 'y', 'z',
+    '0', '1', '2', '3', '4', '5', '6', '7',
+    '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+    'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q',
+    'r', 's', 't', 'v', 'w', 'x', 'y', 'z',
 ];
 
 const LOOKUP_TABLE_LENGTH: u8 = 38;
 // generated with some trial and error in the perfect_hash.py file.
 static REVERSE_ALPHABET: [u8; LOOKUP_TABLE_LENGTH as usize] = [
-    23, 24, 25, 26, 27, 28, 29, 30, 31, 255, 0, 255, 1,
-    2, 3, 4, 5, 6, 7, 8, 255, 9, 10, 11, 12, 13,
-    14, 15, 16, 255, 17, 18, 255, 19, 20, 255, 21, 22
+    24, 25, 26, 255, 27, 28, 29, 30, 31, 255, 0, 1, 2,
+    3, 4, 5, 6, 7, 8, 9, 255, 10, 11, 12, 13, 14,
+    15, 16, 17, 255, 18, 19, 255, 20, 21, 255, 22, 23
 ];
 
 pub const SHORT_LENGTH: usize = 22;
@@ -43,12 +44,14 @@ pub fn base32_decode(input: &str) -> Result<[u8; 16], DecodeError> {
         intermediate[i - 1] = lookup(input[i]);
     }
 
-    // bit hacks to check if any invalid with minimal branching.
+    // bit hacks to check if any invalid with minimal branching:
+    // valid characters are 0..31, so if we OR them all together, we should get 31.
+    // if it's 255, then we have an invalid character.
     let mut combined = 0u8;
     for &c in &intermediate {
         combined |= c;
     }
-    let has_invalid = (combined & !(combined.saturating_sub(255))) == 255;
+    let has_invalid = combined == 255;
     if has_invalid {
         let mut idx255 = intermediate.iter().position(|&c| c == 255).unwrap();
         if idx255 >= 22 {
