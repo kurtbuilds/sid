@@ -1,4 +1,4 @@
-use crate::{NoLabel, Sid};
+use crate::{NoLabel};
 
 impl Label for NoLabel {
     fn label() -> &'static str {
@@ -8,25 +8,6 @@ impl Label for NoLabel {
 
 pub trait Label {
     fn label() -> &'static str;
-
-    #[cfg(feature = "rand")]
-    fn sid() -> Sid<Self> where Self: Sized {
-        Sid::from_timestamp_with_rng(crate::unix_epoch_millis(), &mut rand::thread_rng())
-    }
-
-    fn from_bytes(bytes: [u8; 16]) -> Sid<Self> where Self: Sized {
-        Sid {
-            data: bytes,
-            marker: Default::default(),
-        }
-    }
-
-    fn null_sid() -> Sid<Self> where Self: Sized {
-        Sid {
-            data: [0; 16],
-            marker: Default::default(),
-        }
-    }
 }
 
 #[macro_export]

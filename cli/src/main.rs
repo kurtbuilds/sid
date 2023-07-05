@@ -8,7 +8,6 @@ use sid::{Label, NoLabel, Sid};
 struct Cli {
     id: Option<String>,
 }
-0123456789abcdefghjkmnpqrstvwxyz
 
 fn main() {
     let args = Cli::parse();

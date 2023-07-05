@@ -8,7 +8,7 @@ pub struct MonotonicGenerator<T = NoLabel> {
 impl<T: Label> MonotonicGenerator<T> {
     pub fn new() -> Self {
         Self {
-            previous: T::null_sid(),
+            previous: Sid::<T>::null(),
         }
     }
 

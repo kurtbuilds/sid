@@ -5,9 +5,6 @@ CREATE OR REPLACE FUNCTION generate_ulid() RETURNS uuid
         SELECT (lpad(to_hex(floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint), 12, '0') || encode(gen_random_bytes(10), 'hex'))::uuid;
     $$ LANGUAGE SQL;
 
-
-select generate_ulid();
-
 CREATE OR REPLACE FUNCTION uuid_to_sid(id uuid) RETURNS text AS $$
 DECLARE
   encoding   bytea = '0123456789abcdefghjkmnpqrstvwxyz';
@@ -49,3 +46,8 @@ END
 $$
 LANGUAGE plpgsql
 IMMUTABLE;
+
+CREATE OR REPLACE FUNCTION generate_sid_uuid() RETURNS uuid
+    AS $$
+        SELECT generate_ulid();
+    $$ LANGUAGE SQL;

@@ -8,6 +8,10 @@ pub use sid_encode::DecodeError;
 
 mod label;
 mod monotonic;
+#[cfg(feature = "sqlx")]
+mod sqlx;
+#[cfg(feature = "serde")]
+mod serde;
 
 pub use monotonic::MonotonicGenerator;
 
@@ -19,11 +23,19 @@ fn unix_epoch_millis() -> u64 {
 #[derive(Hash, Copy, Clone)]
 pub struct NoLabel;
 
-#[derive(Hash, Copy)]
+impl NoLabel {
+    pub fn sid() -> Sid {
+        Sid::<NoLabel>::new()
+    }
+}
+
+#[derive(Hash)]
 pub struct Sid<T = NoLabel> {
     data: [u8; 16],
     marker: std::marker::PhantomData<T>,
 }
+
+impl<T: Label> Copy for Sid<T> {}
 
 impl<T> PartialEq<Self> for Sid<T> {
     fn eq(&self, other: &Self) -> bool {
@@ -55,10 +67,24 @@ impl<T> Clone for Sid<T> {
 }
 
 pub fn sid<T: Label>() -> Sid<T> {
-    T::sid()
+    Sid::<T>::new()
+}
+
+impl<T> Sid<T> {
+    #[cfg(feature = "uuid")]
+    pub fn uuid(&self) -> uuid::Uuid {
+        uuid::Uuid::from_bytes(self.data)
+    }
 }
 
 impl<T: Label> Sid<T> {
+    pub fn null() -> Self {
+        Self {
+            data: [0; 16],
+            marker: Default::default(),
+        }
+    }
+
     pub fn new() -> Self {
         Self::from_timestamp_with_rng(unix_epoch_millis(), &mut rand::thread_rng())
     }
@@ -95,26 +121,16 @@ impl<T: Label> Sid<T> {
         format!("{}{}{}", label, separator, &encoded[SHORT_LENGTH + 1..])
     }
 
-    /// String representation of the SID with the label removed, e.g. 0da0fa0e02cssbhkanf04c_srb0
-    pub fn strip(&self) -> String {
-        NoLabel::from_bytes(self.data).to_string()
-    }
-
     pub fn is_null(&self) -> bool {
         self.data.iter().all(|&b| b == 0)
     }
 
-    pub fn data(&self) -> &[u8] {
+    pub fn data(&self) -> &[u8; 16] {
         &self.data
     }
 
     pub fn timestamp(&self) -> u64 {
         u64::from_be_bytes(self.data[0..8].try_into().unwrap())
-    }
-
-    #[cfg(feature = "uuid")]
-    pub fn uuid(&self) -> uuid::Uuid {
-        uuid::Uuid::from_bytes(self.data)
     }
 
     // small difference compared to ULID. Rather than erroring if we overflow the random buffer
@@ -148,37 +164,50 @@ impl<T> Into<uuid::Uuid> for Sid<T> {
 }
 
 #[cfg(feature = "uuid")]
-impl<T: Label> From<uuid::Uuid> for Sid<T> {
+impl<T> From<uuid::Uuid> for Sid<T> {
     fn from(value: uuid::Uuid) -> Self {
         let bytes = value.as_ref();
         let mut data: [u8; 16] = [0; 16];
         data.copy_from_slice(bytes);
-        T::from_bytes(data)
+        Self {
+            data,
+            marker: Default::default(),
+        }
     }
 }
 
-impl<T: Label> FromStr for Sid<T> {
+impl<T> From<[u8; 16]> for Sid<T> {
+    fn from(data: [u8; 16]) -> Self {
+        Self {
+            data,
+            marker: Default::default(),
+        }
+    }
+}
+
+impl<T> FromStr for Sid<T> {
     type Err = DecodeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let data = base32_decode(s)?;
-        Ok(T::from_bytes(data))
+        Ok(Sid::<T>::from(data))
     }
 }
 
 impl<T: Label> Debug for Sid<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self)
-    }
-}
-
-impl<T: Label> Display for Sid<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let encoded = base32_encode(self.data);
         let label = T::label();
         let sep = if label.is_empty() { "" } else { "_" };
         f.write_str(label)?;
         f.write_str(sep)?;
+        f.write_str(&encoded)
+    }
+}
+
+impl<T> Display for Sid<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let encoded = base32_encode(self.data);
         f.write_str(&encoded)
     }
 }
