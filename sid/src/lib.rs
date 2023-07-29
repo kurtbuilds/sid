@@ -258,27 +258,28 @@ mod tests {
         }
 
         let f = Team { id: sid() };
-        assert!(f.id.to_string().starts_with("tea_"));
+        let s = format!("{:?}", f.id);
+        assert!(s.starts_with("tea_"));
     }
 
     #[test]
     fn it_works() {
         let bytes = [1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-        let sid = Team::from_bytes(bytes);
+        let sid = Sid::<Team>::from(bytes);
         println!("{}", sid.short());
         println!("{}", sid);
-        assert_eq!(sid.to_string(), "team_01081g81860w40j2gb1g6g_w3rg");
+        assert_eq!(sid.to_string(), "01081g81860w40j2gb1g6g_w3rg");
         assert_eq!(sid.short(), "team_w3rg");
     }
 
     #[test]
     fn test_null() {
-        let sid = Team::null_sid();
+        let sid = Sid::<Team>::null();
         println!("{}", sid.short());
         println!("{}", sid);
-        assert_eq!(sid.to_string(), "team_0000000000000000000000_0000");
+        assert_eq!(sid.to_string(), "0000000000000000000000_0000");
         assert_eq!(sid.short(), "team_0000");
-        let sid = NoLabel::null_sid();
+        let sid = Sid::<NoLabel>::null();
         assert_eq!(sid.to_string(), "0000000000000000000000_0000");
     }
 
@@ -286,7 +287,7 @@ mod tests {
     #[cfg(feature = "uuid")]
     fn test_uuid() {
         let bytes = [1u8, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-        let sid = Team::from_bytes(bytes);
+        let sid = Sid::<Team>::from(bytes);
         let uuid: uuid::Uuid = sid.clone().into();
         assert_eq!(uuid.to_string(), "01020304-0506-0708-090a-0b0c0d0e0f10");
         let uuid2 = sid.uuid();
@@ -300,7 +301,7 @@ mod tests {
         let sid: Sid<Team> = sid!(team_0000000000000000000000_0000);
         assert!(sid.is_null(), "{}", sid);
         let sid: Sid<Team> = sid!(team_0da0fa0e02cssbhkanf04c_srb0);
-        assert_eq!(sid.to_string(), "team_0da0fa0e02cssbhkanf04c_srb0");
+        assert_eq!(sid.to_string(), "0da0fa0e02cssbhkanf04c_srb0");
     }
 
     #[test]
