@@ -20,7 +20,7 @@ fn unix_epoch_millis() -> u64 {
     SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64
 }
 
-#[derive(Hash, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub struct NoLabel;
 
 impl NoLabel {
@@ -29,10 +29,15 @@ impl NoLabel {
     }
 }
 
-#[derive(Hash)]
 pub struct Sid<T = NoLabel> {
     data: [u8; 16],
     marker: std::marker::PhantomData<T>,
+}
+
+impl<T: Label> std::hash::Hash for Sid<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.data.hash(state)
+    }
 }
 
 impl<T: Label> Copy for Sid<T> {}
