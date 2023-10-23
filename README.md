@@ -2,8 +2,8 @@
 
 An id scheme. Why another one?
 
-- **Lexicographically sorted** - The first 40 bits of `sid` are a second precision timestamp, which can be lexically 
-  sorted as strings (similar to `ulid`). This keeps database indexes small, unlike `uuid` which can explode index size.
+- **Lexicographically sorted** - The first 48 bits of `sid` are ms precision timestamp, which can be lexically 
+  sorted as strings (same as `ulid`). This keeps database indexes small, unlike `uuid` which can explode index size.
 - **Named** - sids can be labeled, e.g. `usr_0da0fa0e02cssbhkanf04c_srb0` or unlabeled.
 - **Readable and memorable** - sid has a 4 character suffix, which is easy to remember, speak, and type, for quick
   visual and verbal comparison.
