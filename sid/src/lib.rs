@@ -15,9 +15,18 @@ mod serde;
 
 pub use monotonic::MonotonicGenerator;
 
+#[cfg(target_arch = "wasm32")]
+fn unix_epoch_millis() -> u64 {
+    js_sys::Date::now() as u64
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 fn unix_epoch_millis() -> u64 {
     use std::time::SystemTime;
-    SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_millis() as u64
+    SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis() as u64
 }
 
 #[derive(Copy, Clone)]
@@ -176,6 +185,24 @@ impl<T> From<uuid::Uuid> for Sid<T> {
         data.copy_from_slice(bytes);
         Self {
             data,
+            marker: Default::default(),
+        }
+    }
+}
+
+impl<T> Sid<T> {
+    pub fn unlabel(self) -> Sid<NoLabel> {
+        Sid {
+            data: self.data,
+            marker: Default::default(),
+        }
+    }
+}
+
+impl Sid<NoLabel> {
+    pub fn into_labeled<U>(self) -> Sid<U> {
+        Sid {
+            data: self.data,
             marker: Default::default(),
         }
     }
