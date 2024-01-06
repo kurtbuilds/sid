@@ -49,8 +49,6 @@ impl<T: Label> std::hash::Hash for Sid<T> {
     }
 }
 
-impl<T: Label> Copy for Sid<T> {}
-
 impl<T> PartialEq<Self> for Sid<T> {
     fn eq(&self, other: &Self) -> bool {
         self.data == other.data
@@ -79,6 +77,8 @@ impl<T> Clone for Sid<T> {
         }
     }
 }
+
+impl<T> Copy for Sid<T> {}
 
 pub fn sid<T: Label>() -> Sid<T> {
     Sid::<T>::new()
