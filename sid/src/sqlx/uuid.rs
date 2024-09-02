@@ -1,10 +1,14 @@
-/// Encode sid as uuid in the database
-use ::sqlx::postgres::{Postgres, PgArgumentBuffer, PgValueRef};
-use ::sqlx::types::Uuid;
 use crate::Sid;
+use ::sqlx::encode::IsNull;
+/// Encode sid as uuid in the database
+use ::sqlx::postgres::{PgArgumentBuffer, PgValueRef, Postgres};
+use ::sqlx::types::Uuid;
 
 impl<T> ::sqlx::Encode<'_, Postgres> for Sid<T> {
-    fn encode_by_ref(&self, buf: &mut PgArgumentBuffer) -> sqlx::encode::IsNull {
+    fn encode_by_ref(
+        &self,
+        buf: &mut PgArgumentBuffer,
+    ) -> Result<IsNull, Box<(dyn std::error::Error + Send + Sync + 'static)>> {
         let uuid = self.uuid();
         <Uuid as sqlx::Encode<Postgres>>::encode(uuid, buf)
     }
