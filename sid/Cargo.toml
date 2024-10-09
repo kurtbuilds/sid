@@ -1,6 +1,6 @@
 [package]
 name = "kurtbuilds_sid"
-version = "0.5.1"
+version = "0.5.2"
 edition = "2021"
 license = "MIT"
 description = "Id schema that is: 128-bit (uuid compatible); sorted (won't explode database indexes); random (gen anywhere); readable (has object type and a \"short\" segment); and highlights on double click. Includes postgres extension."
