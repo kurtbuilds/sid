@@ -244,6 +244,17 @@ impl<T> Display for Sid<T> {
     }
 }
 
+#[cfg(feature = "fake")]
+impl<T: Label> fake::Dummy<fake::Faker>  for Sid<T> {
+    fn dummy(_: &fake::Faker) -> Self {
+        Self::null()
+    }
+
+    fn dummy_with_rng<R: rand::Rng + ?Sized>(_: &fake::Faker, _: &mut R) -> Self {
+        Self::new()
+    }
+}
+
 #[macro_export]
 macro_rules! sid {
     ($value:ident) => {
