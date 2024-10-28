@@ -1,12 +1,12 @@
-use serde::{Serialize, Deserialize, Serializer, Deserializer};
-use std::fmt;
-use serde::de::{self, Visitor};
 use crate::{NoLabel, Sid};
+use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt;
 
 impl<T> Serialize for Sid<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
+    where
+        S: Serializer,
     {
         serializer.serialize_str(&self.to_string())
     }
@@ -14,8 +14,8 @@ impl<T> Serialize for Sid<T> {
 
 impl<'de, T> Deserialize<'de> for Sid<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         struct SidVisitor;
 
@@ -27,14 +27,22 @@ impl<'de, T> Deserialize<'de> for Sid<T> {
             }
 
             fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-                where
-                    E: de::Error,
+            where
+                E: de::Error,
             {
-                let sid: Self::Value = value.parse().map_err(E::custom)?;
+                let deserialize_uuid = cfg!(feature = "deserialize_uuid_strings");
+                let sid: Self::Value = if deserialize_uuid && value.len() == 36 {
+                    use std::str::FromStr;
+                    let uuid = uuid::Uuid::from_str(value).map_err(E::custom)?;
+                    Self::Value::from(uuid)
+                } else {
+                    value.parse().map_err(E::custom)?
+                };
                 Ok(sid)
             }
         }
-
-        deserializer.deserialize_str(SidVisitor).map(|sid| Sid::<T>::from(*sid.data()))
+        let value = deserializer.deserialize_str(SidVisitor)?;
+        let value = value.into_bytes();
+        Ok(Sid::<T>::from(value))
     }
 }

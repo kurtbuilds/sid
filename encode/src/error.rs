@@ -10,9 +10,13 @@ pub enum DecodeError {
 impl Display for DecodeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            DecodeError::InvalidCharacter(c) => write!(f, "Invalid character: {}", c),
-            DecodeError::InvalidLength => write!(f, "Invalid length"),
-            DecodeError::NoSeparator => write!(f, "No separator"),
+            DecodeError::InvalidCharacter(c) => {
+                write!(f, "Invalid character while decoding sid: {}", c)
+            }
+            DecodeError::InvalidLength => {
+                write!(f, "Invalid length for decoding sid, expected 27 characters")
+            }
+            DecodeError::NoSeparator => write!(f, "No separator while decoding sid"),
         }
     }
 }

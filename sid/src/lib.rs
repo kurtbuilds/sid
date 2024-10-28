@@ -3,15 +3,15 @@ use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 
 pub use label::Label;
-use sid_encode::{base32_encode, base32_decode, SHORT_LENGTH};
 pub use sid_encode::DecodeError;
+use sid_encode::{base32_decode, base32_encode, SHORT_LENGTH};
 
 mod label;
 mod monotonic;
-#[cfg(feature = "sqlx")]
-mod sqlx;
 #[cfg(feature = "serde")]
 mod serde;
+#[cfg(feature = "sqlx")]
+mod sqlx;
 
 pub use monotonic::MonotonicGenerator;
 
@@ -105,8 +105,8 @@ impl<T: Label> Sid<T> {
 
     #[cfg(feature = "rand")]
     pub fn from_timestamp_with_rng<R>(timestamp: u64, rng: &mut R) -> Self
-        where
-            R: rand::Rng,
+    where
+        R: rand::Rng,
     {
         if (timestamp >> 48) != 0 {
             panic!("sid does not support timestamps after +10889-08-02T05:31:50.655Z");
@@ -167,6 +167,10 @@ impl<T: Label> Sid<T> {
             data,
             marker: Default::default(),
         }
+    }
+
+    pub fn into_bytes(self) -> [u8; 16] {
+        self.data
     }
 }
 
@@ -245,7 +249,7 @@ impl<T> Display for Sid<T> {
 }
 
 #[cfg(feature = "fake")]
-impl<T: Label> fake::Dummy<fake::Faker>  for Sid<T> {
+impl<T: Label> fake::Dummy<fake::Faker> for Sid<T> {
     fn dummy(_: &fake::Faker) -> Self {
         Self::null()
     }
@@ -268,12 +272,11 @@ macro_rules! sid {
             2 => {
                 let value = value.splitn(2, '_').nth(1).unwrap();
                 Sid::from_str(value).unwrap()
-            },
+            }
             _ => panic!("sid must have 1 or 2 underscores."),
         }
     }};
 }
-
 
 #[cfg(test)]
 mod tests {
