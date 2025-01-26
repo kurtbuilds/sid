@@ -7,6 +7,8 @@ members = [
     "encode",
 ]
 
+[workspace.dependencies]
+kurtbuilds_sid = { path = "sid", version = "0.6" }
 # These profiles come from sid-pg. Not touching them for now.
 [profile.dev]
 panic = "unwind"
