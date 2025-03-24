@@ -100,7 +100,7 @@ impl<T: Label> Sid<T> {
     }
 
     pub fn new() -> Self {
-        Self::from_timestamp_with_rng(unix_epoch_millis(), &mut rand::thread_rng())
+        Self::from_timestamp_with_rng(unix_epoch_millis(), &mut rand::rng())
     }
 
     #[cfg(feature = "rand")]
@@ -111,9 +111,9 @@ impl<T: Label> Sid<T> {
         if (timestamp >> 48) != 0 {
             panic!("sid does not support timestamps after +10889-08-02T05:31:50.655Z");
         }
-        let rand_high = rng.gen::<u32>() as u64 & ((1 << 16) - 1);
+        let rand_high = rng.random::<u32>() as u64 & ((1 << 16) - 1);
         let high = timestamp << 16 | rand_high;
-        let low = rng.gen::<u64>();
+        let low = rng.random::<u64>();
         let high = high.to_be_bytes();
         let low = low.to_be_bytes();
 

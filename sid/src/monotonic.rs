@@ -18,7 +18,7 @@ impl<T: Label> MonotonicGenerator<T> {
     }
 
     pub fn generate_from_datetime(&mut self, datetime: SystemTime) -> Sid<T> {
-        self.generate_from_datetime_with_source(datetime, &mut rand::thread_rng())
+        self.generate_from_datetime_with_source(datetime, &mut rand::rng())
     }
 
     pub fn generate_from_datetime_with_source<R>(

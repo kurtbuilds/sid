@@ -1,7 +1,7 @@
 use std::io::{IsTerminal, Read};
 use std::str::FromStr;
 use clap::{Parser};
-use sid::{Label, NoLabel, Sid};
+use sid::{NoLabel, Sid};
 
 #[derive(Parser)]
 #[command(author, version, about)]
